@@ -24,9 +24,6 @@ default-target = "x86_64-pc-windows-msvc"
 serialize = ["bevy_tilemap_types/serialize", "serde"]
 types = []
 
-[workspace]
-members = ["library/*"]
-
 [dependencies]
 bevy = "0.3"
 bevy_tilemap_types = { path = "library/types" }
