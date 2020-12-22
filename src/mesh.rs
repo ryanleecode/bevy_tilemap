@@ -8,10 +8,10 @@ pub struct ChunkMesh {
 }
 
 impl ChunkMesh {
-    /// Vertex attribute of the tile's index.
-    pub(crate) const ATTRIBUTE_TILE_INDEX: &'static str = "Vertex_Tile_Index";
     /// Vertex attribute of the tile's color.
     pub(crate) const ATTRIBUTE_TILE_COLOR: &'static str = "Vertex_Tile_Color";
+    /// Vertex attribute of the tile's index.
+    pub(crate) const ATTRIBUTE_TILE_INDEX: &'static str = "Vertex_Tile_Index";
 
     /// Constructs a new chunk mesh.
     pub(crate) fn new(dimensions: Dimension2) -> ChunkMesh {
@@ -32,10 +32,10 @@ impl From<&ChunkMesh> for Mesh {
                 let x0 = x as f32 - chunk_width as f32 / 2.0;
                 let x1 = (x + 1) as f32 - chunk_width as f32 / 2.0;
 
-                vertices.push([x0, y0, 0.0]);
-                vertices.push([x0, y1, 0.0]);
-                vertices.push([x1, y1, 0.0]);
-                vertices.push([x1, y0, 0.0]);
+                vertices.push([x0, -y0, 0.0]);
+                vertices.push([x0, -y1, 0.0]);
+                vertices.push([x1, -y1, 0.0]);
+                vertices.push([x1, -y0, 0.0]);
             }
         }
 
@@ -43,7 +43,7 @@ impl From<&ChunkMesh> for Mesh {
             (0..(chunk_width * chunk_height) as u32)
                 .flat_map(|i| {
                     let i = i * 4;
-                    vec![i, i + 2, i + 1, i, i + 3, i + 2]
+                    vec![i + 2, i + 1, i,  i, i + 3, i + 2]
                 })
                 .collect(),
         );
