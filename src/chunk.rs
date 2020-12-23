@@ -80,7 +80,7 @@ pub(crate) trait Layer: 'static {
     fn get_tile_mut(&mut self, index: usize) -> Option<&mut RawTile>;
 
     /// Takes all the tiles in the layer and returns attributes for the renderer.
-    fn tiles_to_attributes(&self, area: usize) -> (Vec<f32>, Vec<[f32; 4]>);
+    fn tiles_to_attributes(&self, area: usize) -> (Vec<f32>, Vec<u32>, Vec<[f32; 4]>);
 }
 
 /// A layer with dense sprite tiles.
@@ -132,7 +132,7 @@ impl Layer for DenseLayer {
         })
     }
 
-    fn tiles_to_attributes(&self, _area: usize) -> (Vec<f32>, Vec<[f32; 4]>) {
+    fn tiles_to_attributes(&self, _area: usize) -> (Vec<f32>, Vec<u32>, Vec<[f32; 4]>) {
         crate::tile::dense_tiles_to_attributes(&self.tiles)
     }
 }
@@ -182,7 +182,7 @@ impl Layer for SparseLayer {
         self.tiles.get_mut(&index)
     }
 
-    fn tiles_to_attributes(&self, area: usize) -> (Vec<f32>, Vec<[f32; 4]>) {
+    fn tiles_to_attributes(&self, area: usize) -> (Vec<f32>, Vec<u32>, Vec<[f32; 4]>) {
         crate::tile::sparse_tiles_to_attributes(area, &self.tiles)
     }
 }
@@ -290,7 +290,8 @@ impl Chunk {
                 let tiles = vec![
                     RawTile {
                         index: 0,
-                        color: Color::rgba(0.0, 0.0, 0.0, 0.0)
+                        color: Color::rgba(0.0, 0.0, 0.0, 0.0),
+                        flags: 0
                     };
                     dimensions.area() as usize
                 ];
@@ -409,7 +410,7 @@ impl Chunk {
         &self,
         z: usize,
         dimensions: Dimension2,
-    ) -> Option<(Vec<f32>, Vec<[f32; 4]>)> {
+    ) -> Option<(Vec<f32>, Vec<u32>, Vec<[f32; 4]>)> {
         let area = dimensions.area() as usize;
         self.sprite_layers.get(z).and_then(|o| {
             o.as_ref()
@@ -430,11 +431,12 @@ pub(crate) fn chunk_update(
         let chunk = tilemap.get_chunk(point).expect("`Chunk` is missing");
         let mesh = meshes.get_mut(mesh_handle).expect("`Mesh` is missing");
 
-        let (indexes, colors) = chunk
+        let (indexes, flags, colors) = chunk
             .tiles_to_renderer_parts(z_order.0, tilemap.chunk_dimensions())
             .expect("Tiles missing.");
 
         mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_INDEX, indexes);
+        mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_FLAGS, flags);
         mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_COLOR, colors);
     }
 }

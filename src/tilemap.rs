@@ -232,6 +232,9 @@ pub struct Tilemap {
     layers: Vec<Option<LayerKind>>,
     /// Auto flags used for different automated features.
     auto_flags: AutoFlags,
+    /// The handle to render resources specific for this tilemap.
+    #[cfg_attr(feature = "serde", serde(skip))]
+    render_resources: Handle<TilemapRenderResources>,
     #[cfg_attr(feature = "serde", serde(skip))]
     /// The handle of the texture atlas.
     texture_atlas: Handle<TextureAtlas>,
@@ -243,6 +246,13 @@ pub struct Tilemap {
     #[cfg_attr(feature = "serde", serde(skip))]
     /// The events of the tilemap.
     events: Events<ChunkEvent>,
+}
+
+#[derive(Debug, Default, RenderResources, TypeUuid)]
+#[uuid = "a675bda1-d4a6-4d70-a2c9-37428f9e3f39"]
+struct TilemapRenderResources {
+    #[render_resources(buffer)]
+    flags: Vec<u32>
 }
 
 /// Tilemap factory, which can be used to construct and configure new tilemaps.
@@ -582,9 +592,7 @@ impl TilemapBuilder {
             layers: vec![None; z_layers],
             auto_flags: self.auto_flags,
             texture_atlas,
-            chunks: Default::default(),
-            entities: Default::default(),
-            events: Default::default(),
+            ..Tilemap::default()
         };
 
         if let Some(mut layers) = self.layers {
@@ -610,7 +618,8 @@ impl Default for Tilemap {
             tile_dimensions: DEFAULT_CHUNK_DIMENSIONS,
             layers: vec![None; DEFAULT_Z_LAYERS],
             auto_flags: AutoFlags::NONE,
-            texture_atlas: Handle::default(),
+            texture_atlas: Default::default(),
+            render_resources: Default::default(),
             chunks: Default::default(),
             entities: Default::default(),
             events: Default::default(),
@@ -1248,9 +1257,7 @@ impl Tilemap {
 
             let chunk_tile: Tile = Tile {
                 point: tile_point,
-                z_order: tile.z_order,
-                sprite_index: tile.sprite_index,
-                tint: tile.tint,
+                ..tile
             };
             if let Some(tiles) = chunk_map.get_mut(&chunk_point) {
                 tiles.push(chunk_tile);
@@ -1281,10 +1288,7 @@ impl Tilemap {
             let mut layers = HashMap::default();
             for tile in tiles.into_iter() {
                 let index = self.chunk_dimensions.encode_point_unchecked(tile.point);
-                let raw_tile = RawTile {
-                    index: tile.sprite_index,
-                    color: tile.tint,
-                };
+                let raw_tile: RawTile = tile.into();
                 chunk.set_raw_tile(tile.z_order, index, raw_tile);
                 if let Some(entity) = chunk.get_entity(tile.z_order) {
                     layers.entry(tile.z_order).or_insert(entity);
@@ -1873,13 +1877,14 @@ pub(crate) fn tilemap(
             let mut entities = Vec::with_capacity(capacity);
             for z in 0..layers_len {
                 let mut mesh = Mesh::from(&ChunkMesh::new(chunk_dimensions));
-                let (indexes, colors) =
+                let (indexes, flags, colors) =
                     if let Some(parts) = chunk.tiles_to_renderer_parts(z, chunk_dimensions) {
                         parts
                     } else {
                         continue;
                     };
                 mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_INDEX, indexes);
+                mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_FLAGS, flags);
                 mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_COLOR, colors);
                 let mesh_handle = meshes.add(mesh);
                 chunk.set_mesh(z, mesh_handle.clone());

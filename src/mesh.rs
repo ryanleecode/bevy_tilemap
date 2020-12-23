@@ -10,6 +10,8 @@ pub struct ChunkMesh {
 impl ChunkMesh {
     /// Vertex attribute of the tile's color.
     pub(crate) const ATTRIBUTE_TILE_COLOR: &'static str = "Vertex_Tile_Color";
+    /// Vertex attribute of the tile's flags.
+    pub(crate) const ATTRIBUTE_TILE_FLAGS: &'static str = "Vertex_Tile_Flags";
     /// Vertex attribute of the tile's index.
     pub(crate) const ATTRIBUTE_TILE_INDEX: &'static str = "Vertex_Tile_Index";
 
@@ -49,12 +51,14 @@ impl From<&ChunkMesh> for Mesh {
         );
 
         let tile_indexes = vec![0.; vertices.len()];
+        let tile_flags = vec![0u32; vertices.len()];
         let tile_colors: Vec<[f32; 4]> = vec![Color::WHITE.into(); vertices.len()];
 
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
         mesh.set_indices(Some(indices));
         mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
         mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_INDEX, tile_indexes);
+        mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_FLAGS, tile_flags);
         mesh.set_attribute(ChunkMesh::ATTRIBUTE_TILE_COLOR, tile_colors);
 
         mesh
